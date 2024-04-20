@@ -1,0 +1,115 @@
+---
+title: "Mini Project 1"
+output: html_notebook
+---
+
+```{r}
+# Step 1: Data Preparation
+# Load necessary libraries
+library(ggplot2)
+library(caret)
+library(glmnet)
+```
+
+The above linraries are used for this prohect. The 
+
+```{r}
+# Load the data
+data <- read.csv("diabetes.csv")
+```
+In this project, I utilized the Pima Indian Diabetes dataset to fulfill the objectives of the course.
+
+#Data Exploration
+
+The summary function to provides a comprehensive overview of the central tendencies, dispersions, and distributions of each variable in the dataset, facilitating initial data understanding and identifying potential data quality issues.
+
+```{r}
+# Data exploration
+summary(data)
+```
+tThe insights I considered are: 
+
+Many key variables like Glucose and BMI show zeros, likely representing missing data needing cleanup.
+Variables such as Age and Glucose vary widely, reflecting diverse health profiles among participants.
+Non-diabetic cases outnumber diabetic cases, indicating an imbalance that could affect model outcomes.
+
+
+The str function quickly summarizes the structure of a dataset, including the types and formats of each variable, the number of observations, and the organization of the data frame, which helps in understanding the composition and readiness of the data for further analysis.
+
+```{r}
+str(data)
+```
+
+```{r}
+head(data)
+
+```
+
+
+#Dara Cleaning
+
+```{r}
+# Handling missing values and outliers
+# Assuming zero in some columns (like Glucose, BloodPressure, SkinThickness, Insulin, BMI) represents missing data
+zero_fields <- c("Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI")
+data[zero_fields] <- lapply(data[zero_fields], function(x) replace(x, x == 0, NA))
+data <- na.omit(data) 
+```
+
+In the above step, I replaced zero values in key variables like Glucose and BMI with NA, considering them as missing data. I then removed all rows with any NA values, cleaning the dataset of incomplete records. This process improves data accuracy and reliability for subsequent statistical analysis and modeling.
+
+
+#Exploratory Data Analysis (EDA)
+
+To effectively visualize and analyze the distribution and relationships between key variables such as glucose, age, and diabetes outcome, in my opinion, histograms and scatter plots provide a clear, graphical representation of the data, which helps in detecting underlying patterns, trends, and outliers. This visual approach is crucial for understanding how these variables interact and influence the likelihood of diabetes, aiding in more informed model development and hypothesis testing.
+
+```{r}
+# Step 2: Exploratory Data Analysis (EDA)
+# Visualizing distributions
+ggplot(data, aes(x = Glucose, fill = factor(Outcome))) + geom_histogram(binwidth = 5, alpha = 0.7) + facet_wrap(~Outcome)
+```
+
+The facetted histogram that compares the distribution of glucose levels for individuals with and without diabetes, represented by the facets labeled "0" (no diabetes) and "1" (diabetes), respectively. The red histogram (facet 0) shows the frequency of glucose levels for non-diabetic individuals, while the blue histogram (facet 1) corresponds to diabetic individuals. Notably, the distribution for the diabetic group tends to have higher glucose levels, with the peak shifted towards the right compared to the non-diabetic group. This visual contrast highlights the association between higher glucose levels and the presence of diabetes, a critical insight for understanding risk factors within the dataset.
+
+```{r}
+ggplot(data, aes(x = Age, y = Glucose, color = factor(Outcome))) + geom_point() + geom_smooth(method = "lm")
+
+```
+This scatter plot shows individual data points representing the relationship between age and glucose levels, differentiated by diabetes outcome, where red dots indicate non-diabetic individuals (Outcome 0) and blue dots indicate diabetic individuals (Outcome 1). Trend lines—red for non-diabetic and blue for diabetic—suggest an upward trend, indicating that glucose levels may increase with age for both groups, but with a steeper incline for diabetic individuals. The shaded areas around the lines represent confidence intervals, providing a visual sense of the variability and reliability of the estimated relationship. Creating this plot is essential because it visually explores the potential interaction between age and glucose levels as they relate to the presence of diabetes, which can inform subsequent analytical decisions and model feature selection.
+
+
+```{r}
+# Calculating summary statistics
+summary(data)
+```
+
+#Model Fitting
+
+```{r}
+# Step 3: Model Fitting
+# Splitting the dataset
+set.seed(123)
+trainIndex <- createDataPartition(data$Outcome, p = 0.7, list = FALSE)
+trainData <- data[trainIndex, ]
+testData <- data[-trainIndex, ]
+```
+
+In this step, the dataset is being split into two parts: a training set and a test set. The set.seed(123) function ensures that the random selection of data is reproducible. The createDataPartition function from the caret package is used to divide the dataset, allocating 70% of the data to the training set (trainData) and the remaining 30% to the test set (testData). This partitioning is stratified on the Outcome variable to maintain the proportion of cases with and without diabetes in both sets. This split is crucial for training the model on one subset of data and then evaluating its performance on a separate, unseen subset to assess its predictive ability.
+
+
+```{r}
+# Fitting logistic regression model
+fit_logistic <- glm(Outcome ~ ., family = binomial, data = trainData)
+
+```
+
+```{r}
+ggplot(trainData, aes_string(x = "Glucose", y = "Outcome")) +
+  geom_point(alpha = 0.4) +
+  stat_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE, color = "blue") +
+  labs(title = "Predicted Probability of Diabetes by Glucose Level",
+       x = "Glucose Level",
+       y = "Predicted Probability of Diabetes")
+```
+
+
